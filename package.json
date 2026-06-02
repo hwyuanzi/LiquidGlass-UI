@@ -1,7 +1,7 @@
 {
   "name": "liquid-glass-ui",
   "version": "1.0.0",
-  "description": "Apple-style liquid glass UI built on native Web Components — real specular highlights, pointer-tracked glare, and optional optical refraction. Zero dependencies.",
+  "description": "Apple-style liquid glass UI built on native Web Components — fixed specular highlights and optional optical edge refraction. Zero dependencies.",
   "type": "module",
   "main": "src/liquid-glass.js",
   "module": "src/liquid-glass.js",

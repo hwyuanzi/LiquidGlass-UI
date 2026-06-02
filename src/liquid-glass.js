@@ -4,11 +4,12 @@
  * A tiny (dependency-free) layer of native Custom Elements that render
  * Apple-style "liquid glass" surfaces. Everything is built on three ideas:
  *
- *   1. A real specular model — a bright top bevel + a pointer-tracked glare
- *      that behaves like light skating across a curved pane of glass.
- *   2. Optional optical refraction — an SVG displacement filter applied to
- *      the *backdrop* so the content behind the glass appears to bend at the
- *      edges (the detail most CSS glassmorphism misses).
+ *   1. A static specular model — a fixed light source from above gives a
+ *      bright top bevel and a soft top sheen. The surface reacts to hover as a
+ *      whole (lift + brighten), like macOS — nothing tracks the cursor.
+ *   2. Optional optical refraction — a smooth edge-lens SVG displacement filter
+ *      applied to the *backdrop* so content behind the glass bends only at the
+ *      curved edges (the detail most CSS glassmorphism misses).
  *   3. Strict encapsulation — each element lives in its own Shadow DOM and is
  *      promoted to its own GPU compositor layer, so blur stays cheap while the
  *      page scrolls.
@@ -23,11 +24,47 @@ const SUPPORTS_REFRACTION =
   CSS.supports &&
   CSS.supports("backdrop-filter", "url(#x)");
 
-const PREFERS_REDUCED_MOTION =
-  typeof matchMedia !== "undefined" &&
-  matchMedia("(prefers-reduced-motion: reduce)").matches;
-
 let FILTER_UID = 0;
+
+/* ---------------------------------------------------------------------------
+ * Edge-lens displacement maps.
+ *
+ * Real glass bends light at its curved edges and leaves the centre clear, so
+ * we drive feDisplacementMap with a *smooth* bevel — never fractal noise (which
+ * reads as blotchy water stains). The displacement vector is split across two
+ * channels: a horizontal ramp in red (x) and a vertical ramp in blue (y).
+ * Each ramp is flat (neutral 128) across the middle and only bends within the
+ * outer `edge` band, so the surface magnifies the backdrop right at the rim.
+ * The two single-channel images are combined at filter time with `feBlend`
+ * (a core SVG primitive — no reliance on CSS blend modes inside the map).
+ * ------------------------------------------------------------------------- */
+const LENS_EDGE = 0.18; // fraction of each side that refracts (0 = none)
+
+const axisMapURI = (axis, edge = LENS_EDGE) => {
+  const e = edge.toFixed(3);
+  const f = (1 - edge).toFixed(3);
+  const horizontal = axis === "x";
+  const dir = horizontal
+    ? 'x1="0" y1="0" x2="1" y2="0"'
+    : 'x1="0" y1="0" x2="0" y2="1"';
+  const mid = horizontal ? "rgb(128,0,0)" : "rgb(0,0,128)";
+  const hi = horizontal ? "rgb(255,0,0)" : "rgb(0,0,255)";
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" preserveAspectRatio="none">` +
+    `<defs><linearGradient id="g" ${dir}>` +
+    `<stop offset="0" stop-color="rgb(0,0,0)"/>` +
+    `<stop offset="${e}" stop-color="${mid}"/>` +
+    `<stop offset="${f}" stop-color="${mid}"/>` +
+    `<stop offset="1" stop-color="${hi}"/>` +
+    `</linearGradient></defs>` +
+    `<rect width="100" height="100" fill="black"/>` +
+    `<rect width="100" height="100" fill="url(#g)"/>` +
+    `</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+};
+
+const LENS_MAP_X = axisMapURI("x");
+const LENS_MAP_Y = axisMapURI("y");
 
 /* Escape interpolated values so an attribute containing quotes or angle
  * brackets can never break out of its markup context. */
@@ -49,16 +86,17 @@ const escAttr = (value) =>
       })[ch],
   );
 
-/* The shared visual layer. Component subclasses only add layout on top. */
+/* The shared visual layer. Component subclasses only add layout on top.
+ *
+ * The lighting model is *static*, like macOS: a fixed light source from above
+ * gives a bright top bevel and a soft top sheen. Nothing tracks the cursor —
+ * the surface simply lifts and brightens as a whole on hover. */
 const BASE_STYLES = `
   :host {
     display: block;
     box-sizing: border-box;
-    perspective: 1100px;
     --_ty: 0px;
     --_sc: 1;
-    --_rx: 0deg;
-    --_ry: 0deg;
   }
   :host([hidden]) { display: none; }
   * { box-sizing: border-box; }
@@ -73,8 +111,7 @@ const BASE_STYLES = `
     -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
     backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
     overflow: hidden;
-    transform: translate3d(0, var(--_ty), 0) scale(var(--_sc)) rotateX(var(--_rx)) rotateY(var(--_ry));
-    transform-style: preserve-3d;
+    transform: translate3d(0, var(--_ty), 0) scale(var(--_sc));
     will-change: transform, box-shadow, background;
     transition:
       transform var(--lg-duration) var(--lg-ease),
@@ -84,7 +121,8 @@ const BASE_STYLES = `
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Bright curved bevel running around the rim — the "edge of the glass". */
+  /* Fixed bevel: bright along the top edge, faint elsewhere, with a soft
+     reflected glow at the very bottom — a single light source from above. */
   .lg::after {
     content: "";
     position: absolute;
@@ -92,11 +130,11 @@ const BASE_STYLES = `
     border-radius: inherit;
     padding: 1px;
     background: linear-gradient(
-      var(--_rim-angle, 145deg),
+      180deg,
       var(--lg-rim) 0%,
-      var(--lg-rim-low) 32%,
-      var(--lg-rim-low) 70%,
-      var(--lg-rim) 100%
+      var(--lg-rim-low) 35%,
+      var(--lg-rim-low) 72%,
+      color-mix(in srgb, var(--lg-rim) 60%, transparent) 100%
     );
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,
@@ -106,27 +144,26 @@ const BASE_STYLES = `
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     mask-composite: exclude;
-    opacity: 0.9;
+    opacity: 0.85;
     pointer-events: none;
     z-index: 3;
     transition: opacity var(--lg-duration) var(--lg-ease);
   }
 
-  /* Pointer-tracked specular glare. */
-  .lg__glare {
+  /* Static top sheen — light pooling on the upper third of the pane. */
+  .lg__sheen {
     position: absolute;
-    inset: -1px;
+    inset: 0;
     border-radius: inherit;
-    background: radial-gradient(
-      220px circle at var(--lg-mx) var(--lg-my),
-      var(--lg-glare) 0%,
-      rgba(255, 255, 255, 0) 60%
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, var(--lg-sheen)) 0%,
+      rgba(255, 255, 255, 0) 42%
     );
-    opacity: 0;
+    opacity: 0.9;
     pointer-events: none;
-    transition: opacity var(--lg-duration-fast) var(--lg-ease);
+    transition: opacity var(--lg-duration) var(--lg-ease);
     z-index: 2;
-    mix-blend-mode: screen;
   }
 
   .lg__content {
@@ -135,7 +172,8 @@ const BASE_STYLES = `
     display: block;
   }
 
-  /* Hover / focus interaction. */
+  /* Hover / focus: the whole element reacts — a gentle lift + brighter glass
+     and edges. No cursor tracking. */
   :host(:hover) .lg,
   :host(:focus-within) .lg {
     --_ty: var(--lg-hover-lift);
@@ -146,9 +184,10 @@ const BASE_STYLES = `
     border-color: var(--lg-hover-border);
     box-shadow: var(--lg-hover-shadow), var(--lg-specular);
   }
-  :host(:hover) .lg__glare,
-  :host(:focus-within) .lg__glare { opacity: 1; }
-  :host(:hover) .lg::after { opacity: 1; }
+  :host(:hover) .lg::after,
+  :host(:focus-within) .lg::after { opacity: 1; }
+  :host(:hover) .lg__sheen,
+  :host(:focus-within) .lg__sheen { opacity: 1; }
 
   /* Refraction enhancement: bend the backdrop with a displacement map. */
   .lg--refract {
@@ -167,9 +206,6 @@ class LiquidGlassElement extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this._frame = 0;
-    this._onMove = this._onMove.bind(this);
-    this._onLeave = this._onLeave.bind(this);
   }
 
   /* Subclasses override these two. */
@@ -183,27 +219,28 @@ class LiquidGlassElement extends HTMLElement {
   connectedCallback() {
     if (!this.isConnected) return;
     this.render();
-    this._bindPointer();
-  }
-
-  disconnectedCallback() {
-    this._unbindPointer();
-    cancelAnimationFrame(this._frame);
   }
 
   render() {
     const refract = this.hasAttribute("refraction") && SUPPORTS_REFRACTION;
     const uid = `lg-refract-${++FILTER_UID}`;
-    const scale = Number(this.getAttribute("refraction-scale")) || 14;
+    const scale = Number(this.getAttribute("refraction-scale")) || 18;
 
+    // `color-interpolation-filters="sRGB"` keeps 128 a true neutral, so the
+    // flat centre of the map produces zero displacement (linearRGB would shift
+    // it and smear the whole surface).
     const filterSvg = refract
       ? `<svg class="lg__filter" aria-hidden="true">
-           <filter id="${uid}" x="-20%" y="-20%" width="140%" height="140%">
-             <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012"
-                           numOctaves="2" seed="7" result="noise"/>
-             <feGaussianBlur in="noise" stdDeviation="2" result="soft"/>
-             <feDisplacementMap in="SourceGraphic" in2="soft" scale="${scale}"
-                                xChannelSelector="R" yChannelSelector="G"/>
+           <filter id="${uid}" x="-8%" y="-8%" width="116%" height="116%"
+                   color-interpolation-filters="sRGB">
+             <feImage href="${LENS_MAP_X}" preserveAspectRatio="none"
+                      x="0" y="0" width="100%" height="100%" result="mx"/>
+             <feImage href="${LENS_MAP_Y}" preserveAspectRatio="none"
+                      x="0" y="0" width="100%" height="100%" result="my"/>
+             <feBlend in="mx" in2="my" mode="screen" result="map"/>
+             <feGaussianBlur in="map" stdDeviation="0.5" result="smap"/>
+             <feDisplacementMap in="SourceGraphic" in2="smap" scale="${scale}"
+                                xChannelSelector="R" yChannelSelector="B"/>
            </filter>
          </svg>`
       : "";
@@ -212,61 +249,12 @@ class LiquidGlassElement extends HTMLElement {
       ${filterSvg}
       <style>${BASE_STYLES}${this.styles()}</style>
       <div class="lg${refract ? " lg--refract" : ""}" part="surface">
-        <div class="lg__glare" part="glare"></div>
+        <div class="lg__sheen" part="sheen"></div>
         <div class="lg__content">${this.body()}</div>
       </div>`;
 
     this._surface = this.shadowRoot.querySelector(".lg");
     if (refract) this._surface.style.setProperty("--_refract", `url(#${uid})`);
-  }
-
-  _bindPointer() {
-    this.addEventListener("pointermove", this._onMove, { passive: true });
-    this.addEventListener("pointerleave", this._onLeave, { passive: true });
-  }
-
-  _unbindPointer() {
-    this.removeEventListener("pointermove", this._onMove);
-    this.removeEventListener("pointerleave", this._onLeave);
-  }
-
-  _onMove(event) {
-    if (this._frame) return; // throttle to one update per frame
-    this._frame = requestAnimationFrame(() => {
-      this._frame = 0;
-      const rect = this.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      const px = (event.clientX - rect.left) / rect.width; // 0..1
-      const py = (event.clientY - rect.top) / rect.height; // 0..1
-
-      this.style.setProperty("--lg-mx", `${(px * 100).toFixed(2)}%`);
-      this.style.setProperty("--lg-my", `${(py * 100).toFixed(2)}%`);
-      // Rotate the rim highlight to chase the cursor.
-      const angle = Math.round(
-        (Math.atan2(py - 0.5, px - 0.5) * 180) / Math.PI + 90,
-      );
-      this.style.setProperty("--_rim-angle", `${angle}deg`);
-
-      if (this.hasAttribute("tilt") && !PREFERS_REDUCED_MOTION) {
-        const max = Number(this.getAttribute("tilt")) || 5;
-        this.style.setProperty(
-          "--_ry",
-          `${((px - 0.5) * 2 * max).toFixed(2)}deg`,
-        );
-        this.style.setProperty(
-          "--_rx",
-          `${((0.5 - py) * 2 * max).toFixed(2)}deg`,
-        );
-      }
-    });
-  }
-
-  _onLeave() {
-    this.style.setProperty("--lg-mx", "50%");
-    this.style.setProperty("--lg-my", "0%");
-    this.style.removeProperty("--_rim-angle");
-    this.style.setProperty("--_rx", "0deg");
-    this.style.setProperty("--_ry", "0deg");
   }
 }
 

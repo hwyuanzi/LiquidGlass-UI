@@ -23,11 +23,10 @@ ships as plain `.js` + `.css` built on the native **Custom Elements** and
 Most CSS "glassmorphism" stops at `blur()` + a translucent fill. LiquidGlass UI
 models how light actually behaves on a curved pane of glass:
 
-- 🪞 **Specular rim highlights** — a bright bevel traces the edge and rotates to chase the cursor.
-- ✨ **Pointer-tracked glare** — a soft, screen-blended hotspot follows the pointer like a real reflection.
-- 🌀 **Optical refraction** *(opt-in)* — an SVG `feDisplacementMap` bends the **backdrop** at the edges, so content behind the glass distorts the way it would through a real lens.
-- 🎛️ **3D tilt** — surfaces lean toward the cursor with a spring-loaded parallax.
-- ⚡ **Compositor-friendly** — every surface gets its own GPU layer and pointer updates are throttled to one `requestAnimationFrame`, keeping blur cheap during scroll.
+- 🪞 **Fixed specular lighting** — like macOS, a single light source from above gives a bright top bevel and a soft top sheen. No cursor-chasing spotlights.
+- 🫧 **Whole-element hover** — the surface reacts as a unit: a gentle lift, brighter glass, and brighter edges, exactly like Apple's controls.
+- 🌀 **Optical refraction** *(opt-in)* — a smooth edge-lens `feDisplacementMap` bends the **backdrop** only at the curved edges (a clean lens, never blotchy noise), the way real glass does.
+- ⚡ **Compositor-friendly** — every surface gets its own GPU layer, keeping backdrop blur cheap during scroll.
 - 🎨 **Design-token driven** — re-theme the entire system from a handful of CSS custom properties.
 - ♿ **Accessible** — honours `prefers-reduced-motion`, exposes focus states, escapes injected markup, and uses semantic HTML.
 
@@ -95,7 +94,6 @@ into your project and reference them locally.
   heading="ADS Technical Audit"
   link="https://github.com/hwyuanzi/repo"
   cta="View repository"
-  tilt="4"
   refraction
 >
   <svg slot="icon" viewBox="0 0 120 120" fill="none">
@@ -125,9 +123,8 @@ into your project and reference them locally.
 
 | Attribute | Type | Effect |
 | --- | --- | --- |
-| `refraction` | boolean | Enables the SVG backdrop-displacement lens (Chromium-class engines; silently skipped elsewhere). |
-| `refraction-scale` | number | Displacement strength (default `14`). |
-| `tilt` | number | Max parallax tilt in degrees toward the cursor (e.g. `tilt="6"`). Disabled under reduced-motion. |
+| `refraction` | boolean | Enables the smooth edge-lens backdrop displacement (Chromium-class engines; silently skipped elsewhere). |
+| `refraction-scale` | number | Edge-lens displacement strength in px (default `18`). |
 
 ### `<liquid-glass-card>`
 
@@ -148,7 +145,7 @@ into your project and reference them locally.
 Slot in text and/or an SVG icon:
 
 ```html
-<liquid-glass-button href="https://github.com" tilt="8">
+<liquid-glass-button href="https://github.com">
   <svg viewBox="0 0 24 24" fill="currentColor"><!-- icon --></svg>
   Star on GitHub
 </liquid-glass-button>
@@ -157,7 +154,7 @@ Slot in text and/or an SVG icon:
 ### Styling internals with `::part`
 
 Each surface exposes CSS `part`s so you can style internals from outside the
-Shadow DOM: `part="surface"`, `part="glare"`, and (button) `part="control"`.
+Shadow DOM: `part="surface"`, `part="sheen"`, and (button) `part="control"`.
 
 ```css
 liquid-glass-card::part(surface) { border-radius: 40px; }
@@ -178,7 +175,7 @@ Override any token on `:root`, a wrapper, or a single element
 | `--lg-radius` | `28px` | Corner radius. |
 | `--lg-border` | `rgba(255,255,255,0.28)` | Edge stroke. |
 | `--lg-rim` | `rgba(255,255,255,0.55)` | Bright specular bevel. |
-| `--lg-glare` | `rgba(255,255,255,0.18)` | Pointer-tracked hotspot. |
+| `--lg-sheen` | `0.16` | Strength of the fixed top-light sheen (0–1). |
 | `--lg-ease` | `cubic-bezier(0.16, 1, 0.3, 1)` | Apple-standard decelerate curve. |
 | `--lg-duration` | `0.55s` | Base transition time. |
 
@@ -210,7 +207,7 @@ import "liquid-glass-ui/css";
 
 export default function Card() {
   return (
-    <liquid-glass-card heading="My project" link="https://…" tilt="4" refraction>
+    <liquid-glass-card heading="My project" link="https://…" refraction>
       <span slot="description">Built with <strong>Web Components</strong>.</span>
     </liquid-glass-card>
   );
@@ -274,17 +271,17 @@ liquid-glass-ui/
 
 `liquid-glass.js` defines a small `LiquidGlassElement` base class. Each
 component subclass supplies only its layout (`styles()` + `body()`); the base
-class handles the shared glass surface, pointer tracking (writing
-`--lg-mx`/`--lg-my` and a rotating rim angle), the optional refraction filter,
-the lift/tilt transform math, and input escaping. Adding a new component is a
-few dozen lines — see [CONTRIBUTING.md](CONTRIBUTING.md).
+class handles the shared glass surface, the fixed specular bevel + top sheen,
+the whole-element hover transform, the optional edge-lens refraction filter, and
+input escaping. Adding a new component is a few dozen lines — see
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 🌐 Browser support
 
 | Feature | Support |
 | --- | --- |
-| Glass, specular rim, glare, tilt, hover | All evergreen browsers (Chrome, Edge, Safari, Firefox). |
-| `refraction` (backdrop displacement) | Chromium-class engines; **gracefully skipped** elsewhere, leaving a clean blurred surface. |
+| Glass, specular bevel, top sheen, hover | All evergreen browsers (Chrome, Edge, Safari, Firefox). |
+| `refraction` (edge-lens displacement) | Chromium-class engines; **gracefully skipped** elsewhere, leaving a clean blurred surface. |
 
 ## 🗺️ Roadmap
 

@@ -57,11 +57,9 @@
   --lg-hover-shadow:
     0 6px 16px rgba(0, 0, 0, 0.18), 0 26px 70px rgba(0, 0, 0, 0.36);
 
-  /* ---- Pointer-tracked glare ---------------------------------- */
-  /* Position is updated live by the component (--lg-mx / --lg-my). */
-  --lg-glare: rgba(255, 255, 255, 0.18);
-  --lg-mx: 50%;
-  --lg-my: 0%;
+  /* ---- Static top sheen --------------------------------------- */
+  /* Strength of the fixed light pooling on the top of the pane (0–1). */
+  --lg-sheen: 0.16;
 
   /* ---- Typography --------------------------------------------- */
   --lg-font:
@@ -80,7 +78,7 @@
   --lg-rim: rgba(255, 255, 255, 0.9);
   --lg-ink: #0b0d16;
   --lg-ink-soft: rgba(11, 13, 22, 0.7);
-  --lg-glare: rgba(255, 255, 255, 0.5);
+  --lg-sheen: 0.35;
 }
 
 /* Optional utility for any plain element that wants the GPU-promoted

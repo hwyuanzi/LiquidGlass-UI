@@ -47,8 +47,8 @@ so formatting must be clean for the build to go green.
 
 1. Subclass `LiquidGlassElement` in `src/liquid-glass.js`.
 2. Override `styles()` (component-specific CSS) and `body()` (the slotted markup).
-   The base class already provides the glass surface, specular rim,
-   pointer-tracked glare, refraction, and tilt.
+   The base class already provides the glass surface, the fixed specular
+   bevel + top sheen, whole-element hover, and the optional edge refraction.
 3. Register it with a guarded `customElements.define(...)`.
 4. Demo it in `examples/index.html` and document it in the README.
 
