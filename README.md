@@ -40,6 +40,7 @@ models how light actually behaves on a curved pane of glass:
 - [Theming & framework use](#-theming--framework-use)
 - [Local environment](#-local-environment)
 - [How it works](#️-how-it-works)
+- [AI / Cursor Skill](#-ai--cursor-skill)
 - [Browser support](#-browser-support)
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
@@ -256,6 +257,12 @@ fetched on demand via `npx` only when you format.
 
 ```text
 liquid-glass-ui/
+├── .cursor/skills/
+│   └── liquid-glass-component/   # AI authoring skill (see below)
+│       ├── SKILL.md
+│       ├── reference.md
+│       ├── examples.md
+│       └── scripts/validate.mjs
 ├── .github/workflows/
 │   ├── ci.yml              # syntax + asset + format checks
 │   └── deploy.yml          # GitHub Pages deploy of the playground
@@ -275,6 +282,28 @@ class handles the shared glass surface, the fixed specular bevel + top sheen,
 the whole-element hover transform, the optional edge-lens refraction filter, and
 input escaping. Adding a new component is a few dozen lines — see
 [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## 🤖 AI / Cursor Skill
+
+This repo ships a project [Cursor Agent Skill](https://docs.cursor.com) at
+`.cursor/skills/liquid-glass-component/` so any AI agent (or contributor) extends
+the library **consistently** with its architecture and visual physics.
+
+| File | Purpose |
+| --- | --- |
+| `SKILL.md` | The entry point — architecture summary, authoring workflow, and the do/don't rules. |
+| `reference.md` | Full `LiquidGlassElement` API, the complete design-token table, and the refraction internals. |
+| `examples.md` | A complete end-to-end example (adding `<liquid-glass-toggle>`) plus usage snippets. |
+| `scripts/validate.mjs` | Enforces the invariants (token-driven visuals, smooth edge-lens refraction only, no cursor tracking, guarded registration, documented + demoed elements). |
+
+Run the invariant check anytime:
+
+```bash
+node .cursor/skills/liquid-glass-component/scripts/validate.mjs
+```
+
+The skill auto-applies when you ask an agent to add or change a `<liquid-glass-*>`
+component, keeping new work on-style without re-explaining the conventions.
 
 ## 🌐 Browser support
 
