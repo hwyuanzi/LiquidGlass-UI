@@ -1,0 +1,44 @@
+{
+  "name": "liquid-glass-ui",
+  "version": "1.0.0",
+  "description": "Apple-style liquid glass UI built on native Web Components — real specular highlights, pointer-tracked glare, and optional optical refraction. Zero dependencies.",
+  "type": "module",
+  "main": "src/liquid-glass.js",
+  "module": "src/liquid-glass.js",
+  "exports": {
+    ".": "./src/liquid-glass.js",
+    "./css": "./src/liquid-glass.css"
+  },
+  "files": [
+    "src/liquid-glass.js",
+    "src/liquid-glass.css",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "python3 -m http.server 8080",
+    "start": "python3 -m http.server 8080",
+    "check": "node --check src/liquid-glass.js"
+  },
+  "keywords": [
+    "web-components",
+    "custom-elements",
+    "shadow-dom",
+    "glassmorphism",
+    "liquid-glass",
+    "ui-library",
+    "design-tokens",
+    "css",
+    "apple",
+    "frosted-glass"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hwyuanzi/liquid-glass-ui.git"
+  },
+  "sideEffects": [
+    "src/liquid-glass.js"
+  ]
+}

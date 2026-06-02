@@ -1,0 +1,107 @@
+/**
+ * LiquidGlass UI — Design Tokens & Optical Engine Variables
+ * ---------------------------------------------------------
+ * A single source of truth for the visual physics of the system.
+ * Every component reads from these custom properties, so the whole
+ * library can be re-themed by overriding a handful of variables.
+ *
+ * Override any token on :root, a wrapper element, or per-component
+ * (e.g. <liquid-glass-card style="--lg-blur: 18px">).
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Motion -------------------------------------------------- */
+  /* Apple's standard "decelerate" curve + a springier interactive one. */
+  --lg-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --lg-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --lg-duration: 0.55s;
+  --lg-duration-fast: 0.28s;
+
+  /* ---- Geometry ------------------------------------------------ */
+  --lg-radius: 28px;
+  --lg-radius-pill: 999px;
+  --lg-pad: 32px;
+
+  /* ---- Glass body --------------------------------------------- */
+  /* Tint is intentionally low-alpha so the backdrop drives the colour. */
+  --lg-tint: 255, 255, 255; /* RGB triplet, recombined below */
+  --lg-tint-strength: 0.1; /* base fill opacity              */
+  --lg-blur: 22px; /* gaussian backdrop radius       */
+  --lg-saturate: 180%; /* chroma recovery after blur     */
+  --lg-brightness: 108%; /* lift to keep glass luminous    */
+
+  --lg-fill: linear-gradient(
+    135deg,
+    rgba(var(--lg-tint), calc(var(--lg-tint-strength) + 0.04)) 0%,
+    rgba(var(--lg-tint), var(--lg-tint-strength)) 48%,
+    rgba(var(--lg-tint), calc(var(--lg-tint-strength) - 0.04)) 100%
+  );
+
+  /* ---- Edges & specular highlights ---------------------------- */
+  --lg-border: rgba(255, 255, 255, 0.28);
+  --lg-rim: rgba(255, 255, 255, 0.55); /* bright top bevel      */
+  --lg-rim-low: rgba(255, 255, 255, 0.05); /* fades round the body  */
+  --lg-specular: inset 0 1px 1.5px rgba(255, 255, 255, 0.55);
+  --lg-occlusion: inset 0 -1px 2px rgba(0, 0, 0, 0.22);
+
+  /* ---- Depth / ambient occlusion ------------------------------ */
+  --lg-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 12px 36px rgba(0, 0, 0, 0.2);
+
+  /* ---- Interactive (hover / focus) ---------------------------- */
+  --lg-hover-tint-strength: 0.16;
+  --lg-hover-border: rgba(255, 255, 255, 0.5);
+  --lg-hover-lift: -6px;
+  --lg-hover-scale: 1.012;
+  --lg-hover-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.18), 0 26px 70px rgba(0, 0, 0, 0.36);
+
+  /* ---- Pointer-tracked glare ---------------------------------- */
+  /* Position is updated live by the component (--lg-mx / --lg-my). */
+  --lg-glare: rgba(255, 255, 255, 0.18);
+  --lg-mx: 50%;
+  --lg-my: 0%;
+
+  /* ---- Typography --------------------------------------------- */
+  --lg-font:
+    "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Segoe UI", system-ui, sans-serif;
+  --lg-ink: #ffffff;
+  --lg-ink-soft: rgba(255, 255, 255, 0.78);
+}
+
+/* Light-surface preset: drop this class on a wrapper when the glass
+   sits over a bright backdrop and needs darker internals. */
+.lg-on-light {
+  --lg-tint: 20, 22, 30;
+  --lg-tint-strength: 0.06;
+  --lg-border: rgba(255, 255, 255, 0.6);
+  --lg-rim: rgba(255, 255, 255, 0.9);
+  --lg-ink: #0b0d16;
+  --lg-ink-soft: rgba(11, 13, 22, 0.7);
+  --lg-glare: rgba(255, 255, 255, 0.5);
+}
+
+/* Optional utility for any plain element that wants the GPU-promoted
+   glass treatment without a web component wrapper. */
+.lg-surface {
+  background: var(--lg-fill);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate))
+    brightness(var(--lg-brightness));
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate))
+    brightness(var(--lg-brightness));
+  border: 1px solid var(--lg-border);
+  border-radius: var(--lg-radius);
+  box-shadow: var(--lg-shadow), var(--lg-specular), var(--lg-occlusion);
+  /* Promote to its own compositor layer to keep blur cheap while scrolling. */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --lg-duration: 0.001s;
+    --lg-duration-fast: 0.001s;
+  }
+}
