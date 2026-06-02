@@ -51,7 +51,7 @@ models how light actually behaves on a curved pane of glass:
 The interactive playground (live token sliders + four switchable backdrops) is
 auto-deployed to GitHub Pages on every push to `main`:
 
-> **https://hwyuanzi.github.io/liquid-glass-ui/**
+> **https://hwyuanzi.github.io/LiquidGlass-UI**
 
 To run it yourself, see [Local environment](#-local-environment).
 
@@ -64,10 +64,10 @@ LiquidGlass UI has **no dependencies**. Pick whichever fits your setup:
 ```html
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/gh/hwyuanzi/liquid-glass-ui/src/liquid-glass.css"
+  href="https://cdn.jsdelivr.net/gh/hwyuanzi/LiquidGlass-UI/src/liquid-glass.css"
 />
 <script type="module">
-  import "https://cdn.jsdelivr.net/gh/hwyuanzi/liquid-glass-ui/src/liquid-glass.js";
+  import "https://cdn.jsdelivr.net/gh/hwyuanzi/LiquidGlass-UI/src/liquid-glass.js";
 </script>
 ```
 
