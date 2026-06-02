@@ -10,7 +10,7 @@
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF.svg)](.github/workflows/ci.yml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blueviolet.svg)](CONTRIBUTING.md)
 
-**[▶ Live demo](https://hwyuanzi.github.io/liquid-glass-ui/)** · [Quick start](#-quick-start) · [Components](#-components) · [Design tokens](#️-design-tokens) · [Contributing](CONTRIBUTING.md)
+**[▶ Live demo](https://hwyuanzi.github.io/LiquidGlass-UI)** · [Quick start](#-quick-start) · [Components](#-components) · [Design tokens](#️-design-tokens) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
